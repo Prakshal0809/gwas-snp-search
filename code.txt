@@ -1,0 +1,157 @@
+import time
+import pandas as pd
+import re
+import random
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
+complement = {"A": "T", "T": "A", "C": "G", "G": "C"}
+
+def parse_p_value(p_text):
+    p_text = p_text.translate(str.maketrans("⁰¹²³⁴⁵⁶⁷⁸⁹⁻", "0123456789-"))
+    p_text = p_text.lower().replace("x", "e").replace("×", "e").replace("−", "-").replace("–", "-").replace(" ", "")
+    try:
+        return float(p_text)
+    except:
+        match = re.search(r"(\d+(?:\.\d+)?)[^\d]*(10)[^\d\-]*(-?\d+)", p_text)
+        if match:
+            base, _, exponent = match.groups()
+            return float(base) * 10**int(exponent)
+    return None
+
+# Set up browser
+options = webdriver.ChromeOptions()
+# options.add_argument("--headless=new")  # Uncomment to run headless
+driver = webdriver.Chrome(options=options)
+wait = WebDriverWait(driver, 20)
+
+search_term = "dental caries"
+driver.get("https://www.ebi.ac.uk/gwas")
+
+search_box = wait.until(EC.presence_of_element_located((By.ID, "search-box")))
+search_box.send_keys(search_term)
+search_box.send_keys(Keys.RETURN)
+
+results = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "table tbody tr td a")))
+for r in results:
+    if search_term in r.text.lower():
+        r.click()
+        break
+
+snp_data = []
+skipped_studies = []
+page = 1
+
+while page <= 10:
+    print(f"📄 Scraping page {page}...")
+    wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "table.dataTable tbody tr")))
+    rows = driver.find_elements(By.CSS_SELECTOR, "table.dataTable tbody tr")
+
+    for row in rows:
+        cols = row.find_elements(By.TAG_NAME, "td")
+        if len(cols) < 10:
+            continue
+
+        full_snp = cols[0].text.strip()
+        p_text = cols[1].text.strip()
+        beta = cols[5].text.strip()
+        trait = cols[9].text.strip()
+
+        if "?" in full_snp or "-" not in full_snp:
+            continue
+
+        p_val = parse_p_value(p_text)
+        if not p_val or p_val >= 5e-8:
+            continue
+
+        try:
+            snp_id, risk = full_snp.split("-")
+            risk = risk.upper()
+            non_risk = complement.get(risk, "")
+            if not non_risk:
+                continue
+
+            study_elem = cols[-2].find_element(By.TAG_NAME, "a")
+            ebi_link = study_elem.get_attribute("href")
+
+            driver.execute_script(f"window.open('{ebi_link}', '_blank');")
+            driver.switch_to.window(driver.window_handles[1])
+            time.sleep(2)
+
+            # ✅ Extract PubMed ID using #study-pubmedid
+            try:
+                pubmed_id_elem = driver.find_element(By.CSS_SELECTOR, "#study-pubmedid a")
+                pubmed_id = pubmed_id_elem.text.strip()
+                pubmed_link = f"https://pubmed.ncbi.nlm.nih.gov/{pubmed_id}"
+                print(f"🔍 Extracted PubMed ID: {pubmed_id}")
+            except:
+                pubmed_id = ""
+                pubmed_link = "N/A"
+                print("⚠️ No PubMed ID found in #study-pubmedid.")
+                skipped_studies.append(full_snp)
+                driver.close()
+                driver.switch_to.window(driver.window_handles[0])
+                continue
+
+            # 🌐 Navigate to PubMed and extract DOI
+            try:
+                driver.get(pubmed_link)
+                doi_elem = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "a[href*='doi.org']")))
+                doi = doi_elem.get_attribute("href")
+                print(f"✅ Found DOI: {doi}")
+            except Exception as e:
+                timestamp = int(time.time())
+                driver.save_screenshot(f"pubmed_fail_{timestamp}.png")
+                print(f"⚠️ DOI not found on PubMed page for ID {pubmed_id} — {e}")
+                doi = "N/A"
+                skipped_studies.append(full_snp)
+
+            snp_data.append({
+                "Primary SNP": full_snp,
+                "Risk Allele": risk,
+                "Non-risk Allele": non_risk,
+                "P-value": p_text,
+                "Beta": beta,
+                "Trait": trait,
+                "EBI Study Link": ebi_link,
+                "PubMed Link": pubmed_link,
+                "DOI": doi
+            })
+
+            driver.close()
+            driver.switch_to.window(driver.window_handles[0])
+            time.sleep(random.uniform(2.5, 4.5))
+
+        except Exception as e:
+            print("⚠️ Error extracting SNP:", e)
+            if len(driver.window_handles) > 1:
+                driver.close()
+                driver.switch_to.window(driver.window_handles[0])
+            continue
+
+    # Try clicking next
+    try:
+        next_btn = driver.find_element(By.ID, "association-table-v2_next")
+        if "disabled" in next_btn.get_attribute("class"):
+            break
+        driver.execute_script("arguments[0].click();", next_btn)
+        time.sleep(2)
+        page += 1
+    except:
+        break
+
+driver.quit()
+
+df = pd.DataFrame(snp_data)
+filename = f"{search_term.replace(' ', '_')}_snps_final.xlsx"
+df.to_excel(filename, index=False)
+
+if skipped_studies:
+    pd.DataFrame(skipped_studies, columns=["Skipped SNPs"]).to_csv("skipped_snps.csv", index=False)
+
+print(f"✅ Done. Saved {len(df)} SNPs to '{filename}'")
+if skipped_studies:
+    print(f"⚠️ Skipped {len(skipped_studies)} SNPs. See 'skipped_snps.csv' for details.")
