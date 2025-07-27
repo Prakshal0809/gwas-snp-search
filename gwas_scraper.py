@@ -88,9 +88,14 @@ def run_gwas_scrape(search_term, progress_callback=None, max_pages=None):
         options.add_argument("--disable-web-security")
         options.add_argument("--disable-features=VizDisplayCompositor")
         options.add_argument("--memory-pressure-off")
-        options.add_argument("--max_old_space_size=4096")
-        options.add_argument("--window-size=1280,720")
-        options.add_argument("--remote-debugging-port=9222")
+        options.add_argument("--max_old_space_size=2048")
+        options.add_argument("--window-size=1024,768")
+        options.add_argument("--disable-animations")
+        options.add_argument("--disable-background-timer-throttling")
+        options.add_argument("--disable-backgrounding-occluded-windows")
+        options.add_argument("--disable-renderer-backgrounding")
+        options.add_argument("--disable-features=TranslateUI")
+        options.add_argument("--disable-ipc-flooding-protection")
         options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
         options.add_experimental_option("excludeSwitches", ["enable-automation"])
         options.add_experimental_option('useAutomationExtension', False)
@@ -122,7 +127,7 @@ def run_gwas_scrape(search_term, progress_callback=None, max_pages=None):
             progress_callback(15, f"Navigating to GWAS database...")
         
         driver.get("https://www.ebi.ac.uk/gwas")
-        time.sleep(1)  # Reduced wait time
+        time.sleep(0.5)  # Further reduced wait time
         
         if progress_callback:
             progress_callback(20, f"Searching for '{search_term}'...")
@@ -132,7 +137,7 @@ def run_gwas_scrape(search_term, progress_callback=None, max_pages=None):
         search_box.clear()
         search_box.send_keys(search_term)
         search_box.send_keys(Keys.RETURN)
-        time.sleep(1)  # Reduced wait time
+        time.sleep(0.5)  # Further reduced wait time
         
         if progress_callback:
             progress_callback(25, "Finding relevant studies...")
@@ -141,7 +146,7 @@ def run_gwas_scrape(search_term, progress_callback=None, max_pages=None):
         try:
             # Wait for any results to appear
             wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "table tbody tr td a, .results a, a[href*='study']")))
-            time.sleep(1)
+            time.sleep(0.5)
             
             # Try multiple selectors to find the right link
             selectors = [
@@ -183,7 +188,7 @@ def run_gwas_scrape(search_term, progress_callback=None, max_pages=None):
         except TimeoutException:
             raise Exception("Search results did not load within expected time")
         
-        time.sleep(1)  # Reduced wait time
+        time.sleep(0.5)  # Further reduced wait time
         
         # Check pagination info to see if there are multiple pages
         try:
@@ -316,7 +321,7 @@ def run_gwas_scrape(search_term, progress_callback=None, max_pages=None):
                         "DOI": doi
                     })
                     
-                    time.sleep(random.uniform(1.0, 2.0))
+                    time.sleep(random.uniform(0.5, 1.0))
                     
                 except Exception as e:
                     # Only add to skipped if there's a fundamental error with the SNP
@@ -369,7 +374,7 @@ def run_gwas_scrape(search_term, progress_callback=None, max_pages=None):
                         progress_callback(90, "Could not click Next button")
                     break
                 
-                time.sleep(2)  # Wait for page to load
+                time.sleep(1)  # Reduced wait time for page load
                 page += 1
                 if progress_callback:
                     progress_callback(progress, f"Successfully moved to page {page}")
@@ -416,11 +421,11 @@ def run_gwas_scrape(search_term, progress_callback=None, max_pages=None):
                     writer.writerow([snp])
         
         if progress_callback:
-            progress_callback(100, f"Completed! Found {len(df)} SNPs across {page} pages.")
+            progress_callback(100, f"Completed! Found {len(snp_data)} SNPs across {page} pages.")
         
         return {
             'success': True,
-            'count': len(df),
+            'count': len(snp_data),
             'filename': filename,
             'skipped_count': len(skipped_studies),
             'pages_scraped': page,
