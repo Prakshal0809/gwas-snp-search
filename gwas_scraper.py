@@ -1,5 +1,5 @@
 import time
-import pandas as pd
+import csv
 import re
 import random
 import os
@@ -389,21 +389,31 @@ def run_gwas_scrape(search_term, progress_callback=None, max_pages=None):
             progress_callback(90, "Saving results...")
         
         # Save results
-        df = pd.DataFrame(snp_data)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"{search_term.replace(' ', '_')}_snps_{timestamp}.xlsx"
+        filename = f"{search_term.replace(' ', '_')}_snps_{timestamp}.csv"
         
         # Save to downloads folder
         downloads_dir = "downloads"
         os.makedirs(downloads_dir, exist_ok=True)
         filepath = os.path.join(downloads_dir, filename)
-        df.to_excel(filepath, index=False)
+        
+        # Write CSV file
+        with open(filepath, 'w', newline='', encoding='utf-8') as csvfile:
+            fieldnames = ["Primary SNP", "Risk Allele", "Non-risk Allele", "P-value", "Beta", "Trait", "EBI Study Link", "PubMed Link", "DOI"]
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            for row in snp_data:
+                writer.writerow(row)
         
         # Save skipped studies if any
         if skipped_studies:
             skipped_filename = f"skipped_snps_{timestamp}.csv"
             skipped_filepath = os.path.join(downloads_dir, skipped_filename)
-            pd.DataFrame(skipped_studies, columns=["Skipped SNPs"]).to_csv(skipped_filepath, index=False)
+            with open(skipped_filepath, 'w', newline='', encoding='utf-8') as csvfile:
+                writer = csv.writer(csvfile)
+                writer.writerow(["Skipped SNPs"])
+                for snp in skipped_studies:
+                    writer.writerow([snp])
         
         if progress_callback:
             progress_callback(100, f"Completed! Found {len(df)} SNPs across {page} pages.")
