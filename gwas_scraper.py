@@ -9,10 +9,8 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
 from selenium.common.exceptions import TimeoutException, ElementClickInterceptedException
 from datetime import datetime
-from webdriver_manager.chrome import ChromeDriverManager
 
 complement = {"A": "T", "T": "A", "C": "G", "G": "C"}
 
@@ -75,9 +73,9 @@ def run_gwas_scrape(search_term, progress_callback=None, max_pages=None):
     """
     driver = None
     try:
-        # Set up browser - optimized for cloud deployment
+        # Set up browser - optimized for local development
         options = Options()
-        options.add_argument("--headless=new")
+        options.add_argument("--headless=new")  # Enable headless mode
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
         options.add_argument("--disable-blink-features=AutomationControlled")
@@ -88,14 +86,8 @@ def run_gwas_scrape(search_term, progress_callback=None, max_pages=None):
         options.add_argument("--disable-web-security")
         options.add_argument("--disable-features=VizDisplayCompositor")
         options.add_argument("--memory-pressure-off")
-        options.add_argument("--max_old_space_size=2048")
-        options.add_argument("--window-size=1024,768")
-        options.add_argument("--disable-animations")
-        options.add_argument("--disable-background-timer-throttling")
-        options.add_argument("--disable-backgrounding-occluded-windows")
-        options.add_argument("--disable-renderer-backgrounding")
-        options.add_argument("--disable-features=TranslateUI")
-        options.add_argument("--disable-ipc-flooding-protection")
+        options.add_argument("--max_old_space_size=4096")
+        options.add_argument("--window-size=1280,720")
         options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
         options.add_experimental_option("excludeSwitches", ["enable-automation"])
         options.add_experimental_option('useAutomationExtension', False)
@@ -110,15 +102,10 @@ def run_gwas_scrape(search_term, progress_callback=None, max_pages=None):
             }
         })
         
-        # Use webdriver-manager for automatic ChromeDriver installation
-        try:
-            service = Service(ChromeDriverManager().install())
-            driver = webdriver.Chrome(service=service, options=options)
-        except Exception as e:
-            # Fallback to system ChromeDriver for local environment
-            driver = webdriver.Chrome(options=options)
+        # Use local ChromeDriver
+        driver = webdriver.Chrome(options=options)
         driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
-        wait = WebDriverWait(driver, 10)  # Reduced timeout for faster detection
+        wait = WebDriverWait(driver, 20)
         
         if progress_callback:
             progress_callback(10, f"Initializing browser...")
@@ -127,7 +114,7 @@ def run_gwas_scrape(search_term, progress_callback=None, max_pages=None):
             progress_callback(15, f"Navigating to GWAS database...")
         
         driver.get("https://www.ebi.ac.uk/gwas")
-        time.sleep(0.5)  # Further reduced wait time
+        time.sleep(1)  # Reduced wait time
         
         if progress_callback:
             progress_callback(20, f"Searching for '{search_term}'...")
@@ -260,7 +247,7 @@ def run_gwas_scrape(search_term, progress_callback=None, max_pages=None):
         except TimeoutException:
             raise Exception("Search results did not load within expected time")
         
-        time.sleep(0.5)  # Further reduced wait time
+        time.sleep(1)  # Reduced wait time
         
         # Check pagination info to see if there are multiple pages
         try:
@@ -393,7 +380,7 @@ def run_gwas_scrape(search_term, progress_callback=None, max_pages=None):
                         "DOI": doi
                     })
                     
-                    time.sleep(random.uniform(0.5, 1.0))
+                    time.sleep(random.uniform(1.0, 2.0))
                     
                 except Exception as e:
                     # Only add to skipped if there's a fundamental error with the SNP
@@ -446,7 +433,7 @@ def run_gwas_scrape(search_term, progress_callback=None, max_pages=None):
                         progress_callback(90, "Could not click Next button")
                     break
                 
-                time.sleep(1)  # Reduced wait time for page load
+                time.sleep(2)  # Wait for page to load
                 page += 1
                 if progress_callback:
                     progress_callback(progress, f"Successfully moved to page {page}")
