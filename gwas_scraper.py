@@ -153,16 +153,19 @@ def run_gwas_scrape(search_term, progress_callback=None, max_pages=None):
             # Check for "No results found" message using multiple methods
             no_results_found = False
             
-            # Method 1: Check page source for specific text
-            page_text = driver.page_source.lower()
-            if "no results found" in page_text or "no results found for search term" in page_text:
-                no_results_found = True
+            # Method 1: Check page source for specific text - REMOVED because it's too broad
+            # The page source contains hidden divs with "no results" text even when results exist
+            # page_text = driver.page_source.lower()
+            # if "no results found for search term" in page_text:
+            #     no_results_found = True
             
-            # Method 2: Look for specific elements with XPath
+            # Method 2: Look for specific elements with XPath - more precise
             if not no_results_found:
                 try:
-                    elements = driver.find_elements(By.XPATH, "//*[contains(text(), 'No results found')]")
-                    if elements:
+                    elements = driver.find_elements(By.XPATH, "//*[contains(text(), 'No results found for search term')]")
+                    # Only consider visible elements
+                    visible_elements = [elem for elem in elements if elem.is_displayed() and elem.get_attribute("style") != "display: none"]
+                    if visible_elements:
                         no_results_found = True
                 except:
                     pass
@@ -171,17 +174,23 @@ def run_gwas_scrape(search_term, progress_callback=None, max_pages=None):
             if not no_results_found:
                 try:
                     elements = driver.find_elements(By.CSS_SELECTOR, ".no-results, .empty-results, [class*='no-results'], #noResults")
-                    if elements:
+                    # Only consider visible elements
+                    visible_elements = [elem for elem in elements if elem.is_displayed() and elem.get_attribute("style") != "display: none"]
+                    if visible_elements:
                         no_results_found = True
                 except:
                     pass
             
-            # Method 4: Look for the specific noResults div
+            # Method 4: Look for the specific noResults div - more precise
             if not no_results_found:
                 try:
                     no_results_div = driver.find_element(By.ID, "noResults")
-                    if no_results_div.is_displayed():
-                        no_results_found = True
+                    # Only consider it if it's actually displayed (not hidden)
+                    if no_results_div.is_displayed() and no_results_div.get_attribute("style") != "display: none":
+                        # Double-check that it contains the specific text
+                        div_text = no_results_div.text.lower()
+                        if "no results found for search term" in div_text:
+                            no_results_found = True
                 except:
                     pass
             
