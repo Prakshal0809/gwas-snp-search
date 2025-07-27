@@ -55,16 +55,30 @@ def run_scraping_task(search_term):
             return
         
         if result['success']:
-            scraping_status.update({
-                'is_running': False,
-                'progress': 100,
-                'message': f'Completed! Found {result["count"]} SNPs',
-                'filename': result['filename'],
-                'count': result['count'],
-                'skipped_count': result['skipped_count'],
-                'pages_scraped': result['pages_scraped'],
-                'error': None
-            })
+            # Check if no results were found
+            if result.get('no_results', False):
+                scraping_status.update({
+                    'is_running': False,
+                    'progress': 100,
+                    'message': f'No results found for search term "{search_term}"',
+                    'filename': '',
+                    'count': 0,
+                    'skipped_count': 0,
+                    'pages_scraped': 0,
+                    'error': None,
+                    'no_results': True
+                })
+            else:
+                scraping_status.update({
+                    'is_running': False,
+                    'progress': 100,
+                    'message': f'Completed! Found {result["count"]} SNPs',
+                    'filename': result['filename'],
+                    'count': result['count'],
+                    'skipped_count': result['skipped_count'],
+                    'pages_scraped': result['pages_scraped'],
+                    'error': None
+                })
         else:
             scraping_status.update({
                 'is_running': False,

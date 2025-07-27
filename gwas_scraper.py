@@ -118,7 +118,7 @@ def run_gwas_scrape(search_term, progress_callback=None, max_pages=None):
             # Fallback to system ChromeDriver for local environment
             driver = webdriver.Chrome(options=options)
         driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
-        wait = WebDriverWait(driver, 20)
+        wait = WebDriverWait(driver, 10)  # Reduced timeout for faster detection
         
         if progress_callback:
             progress_callback(10, f"Initializing browser...")
@@ -137,16 +137,79 @@ def run_gwas_scrape(search_term, progress_callback=None, max_pages=None):
         search_box.clear()
         search_box.send_keys(search_term)
         search_box.send_keys(Keys.RETURN)
-        time.sleep(0.5)  # Further reduced wait time
+        time.sleep(2)  # Wait for search to complete
         
         if progress_callback:
-            progress_callback(25, "Finding relevant studies...")
+            progress_callback(25, "Checking search results...")
+        
+        # Check if there are no results found immediately after search
+        try:
+            # Wait a bit for the page to load after search
+            time.sleep(3)  # Increased wait time
+            
+            if progress_callback:
+                progress_callback(30, "Analyzing search results...")
+            
+            # Check for "No results found" message using multiple methods
+            no_results_found = False
+            
+            # Method 1: Check page source for specific text
+            page_text = driver.page_source.lower()
+            if "no results found" in page_text or "no results found for search term" in page_text:
+                no_results_found = True
+            
+            # Method 2: Look for specific elements with XPath
+            if not no_results_found:
+                try:
+                    elements = driver.find_elements(By.XPATH, "//*[contains(text(), 'No results found')]")
+                    if elements:
+                        no_results_found = True
+                except:
+                    pass
+            
+            # Method 3: Look for elements with specific classes
+            if not no_results_found:
+                try:
+                    elements = driver.find_elements(By.CSS_SELECTOR, ".no-results, .empty-results, [class*='no-results'], #noResults")
+                    if elements:
+                        no_results_found = True
+                except:
+                    pass
+            
+            # Method 4: Look for the specific noResults div
+            if not no_results_found:
+                try:
+                    no_results_div = driver.find_element(By.ID, "noResults")
+                    if no_results_div.is_displayed():
+                        no_results_found = True
+                except:
+                    pass
+            
+            if no_results_found:
+                if progress_callback:
+                    progress_callback(100, f"No results found for search term '{search_term}'")
+                return {
+                    'success': True,
+                    'count': 0,
+                    'filename': '',
+                    'skipped_count': 0,
+                    'pages_scraped': 0,
+                    'error': None,
+                    'no_results': True
+                }
+        
+        except Exception as e:
+            # If we can't check for no results, continue with normal flow
+            pass
         
         # Wait for results and try to find clickable links
         try:
-            # Wait for any results to appear
-            wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "table tbody tr td a, .results a, a[href*='study']")))
-            time.sleep(0.5)
+            # Wait for any results to appear, but with a shorter timeout
+            try:
+                wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "table tbody tr td a, .results a, a[href*='study']")))
+                time.sleep(0.5)
+            except TimeoutException:
+                raise Exception("Search results did not load within expected time")
             
             # Try multiple selectors to find the right link
             selectors = [

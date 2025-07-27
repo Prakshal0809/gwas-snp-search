@@ -256,6 +256,21 @@
             font-size: 1.5rem;
             margin-right: 10px;
         }
+        
+        .no-results-section {
+            display: none;
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            color: #1565c0;
+        }
+
+        .no-results-icon {
+            font-size: 1.5rem;
+            margin-right: 10px;
+        }
 
         .loading-spinner {
             display: inline-block;
@@ -397,6 +412,11 @@
             <i class="fas fa-clock timeout-icon"></i>
             <span id="timeoutMessage"></span>
         </div>
+        
+        <div id="noResultsSection" class="no-results-section">
+            <i class="fas fa-search no-results-icon"></i>
+            <span id="noResultsMessage"></span>
+        </div>
 
         <div id="resultSection" class="result-section">
             <div class="result-card">
@@ -446,6 +466,7 @@
             document.getElementById('resultSection').style.display = 'none';
             document.getElementById('errorSection').style.display = 'none';
             document.getElementById('timeoutSection').style.display = 'none';
+            document.getElementById('noResultsSection').style.display = 'none';
             startTime = Date.now();
         }
         
@@ -462,6 +483,12 @@
         function showTimeout(message) {
             document.getElementById('timeoutMessage').textContent = message;
             document.getElementById('timeoutSection').style.display = 'block';
+            hideProgress();
+        }
+        
+        function showNoResults(message) {
+            document.getElementById('noResultsMessage').textContent = message;
+            document.getElementById('noResultsSection').style.display = 'block';
             hideProgress();
         }
         
@@ -559,6 +586,9 @@
                         } else {
                             showError(status.error);
                         }
+                    } else if (status.no_results) {
+                        // Handle no results case
+                        showNoResults(status.message);
                     } else if (status.filename) {
                         showResult({
                             count: status.count || 0,
