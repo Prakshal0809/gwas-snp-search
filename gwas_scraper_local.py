@@ -9,10 +9,8 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
 from selenium.common.exceptions import TimeoutException, ElementClickInterceptedException
 from datetime import datetime
-from webdriver_manager.chrome import ChromeDriverManager
 
 complement = {"A": "T", "T": "A", "C": "G", "G": "C"}
 
@@ -63,7 +61,7 @@ def safe_click(driver, element, wait_time=10):
 
 def run_gwas_scrape(search_term, progress_callback=None, max_pages=None):
     """
-    Run GWAS scraping with progress updates
+    Run GWAS scraping with progress updates - LOCAL VERSION
     
     Args:
         search_term (str): The search term to look for
@@ -75,9 +73,9 @@ def run_gwas_scrape(search_term, progress_callback=None, max_pages=None):
     """
     driver = None
     try:
-        # Set up browser - optimized for cloud deployment
+        # Set up browser - optimized for local development
         options = Options()
-        options.add_argument("--headless=new")
+        # options.add_argument("--headless=new")  # Comment out for local testing
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
         options.add_argument("--disable-blink-features=AutomationControlled")
@@ -90,7 +88,6 @@ def run_gwas_scrape(search_term, progress_callback=None, max_pages=None):
         options.add_argument("--memory-pressure-off")
         options.add_argument("--max_old_space_size=4096")
         options.add_argument("--window-size=1280,720")
-        options.add_argument("--remote-debugging-port=9222")
         options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
         options.add_experimental_option("excludeSwitches", ["enable-automation"])
         options.add_experimental_option('useAutomationExtension', False)
@@ -105,13 +102,8 @@ def run_gwas_scrape(search_term, progress_callback=None, max_pages=None):
             }
         })
         
-        # Use webdriver-manager for automatic ChromeDriver installation
-        try:
-            service = Service(ChromeDriverManager().install())
-            driver = webdriver.Chrome(service=service, options=options)
-        except Exception as e:
-            # Fallback to system ChromeDriver for local environment
-            driver = webdriver.Chrome(options=options)
+        # Use local ChromeDriver
+        driver = webdriver.Chrome(options=options)
         driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
         wait = WebDriverWait(driver, 20)
         
@@ -438,4 +430,4 @@ def main():
         print(f"❌ Error: {result['error']}")
 
 if __name__ == "__main__":
-    main()
+    main() 

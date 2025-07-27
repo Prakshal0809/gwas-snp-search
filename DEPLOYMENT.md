@@ -31,7 +31,7 @@ git push -u origin main
    - **Environment**: `Python 3`
    - **Region**: Choose closest to your users
    - **Branch**: `main`
-   - **Build Command**: `chmod +x build.sh && ./build.sh`
+   - **Build Command**: `pip install -r requirements.txt`
    - **Start Command**: `gunicorn app:app`
 4. **Advanced Settings**:
    - **Plan**: Free
@@ -54,9 +54,9 @@ If needed, add these in Render dashboard:
 - **Shared CPU** (good for our use case)
 
 ### Chrome Installation:
-- The `build.sh` script installs Chrome and ChromeDriver
-- This is required for Selenium web scraping
-- First deployment takes longer due to Chrome installation
+- Chrome and ChromeDriver are installed automatically by webdriver-manager
+- No manual installation required
+- First deployment is faster and more reliable
 
 ### File Storage:
 - Files are stored temporarily on Render
