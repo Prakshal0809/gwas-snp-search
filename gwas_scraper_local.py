@@ -75,7 +75,7 @@ def run_gwas_scrape(search_term, progress_callback=None, max_pages=None):
     try:
         # Set up browser - optimized for local development
         options = Options()
-        # options.add_argument("--headless=new")  # Comment out for local testing
+        options.add_argument("--headless=new")  # Enable headless mode
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
         options.add_argument("--disable-blink-features=AutomationControlled")

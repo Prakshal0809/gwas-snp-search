@@ -498,13 +498,21 @@
             document.getElementById('snpCount').textContent = data.count || 0;
             document.getElementById('skippedCount').textContent = data.skipped_count || 0;
             document.getElementById('pagesCount').textContent = data.pages_scraped || 0;
-            document.getElementById('downloadBtn').href = `/api/download/${data.filename}`;
+            
+            // Set download button href if filename is available
+            const downloadBtn = document.getElementById('downloadBtn');
+            if (data.filename) {
+                downloadBtn.href = `/api/download/${data.filename}`;
+                downloadBtn.style.display = 'inline-flex';
+            } else {
+                downloadBtn.style.display = 'none';
+            }
             
             // Show debug info
             const debugInfo = document.getElementById('debugInfo');
             const debugText = document.getElementById('debugText');
             debugText.innerHTML = `
-                Filename: ${data.filename}<br>
+                Filename: ${data.filename || 'N/A'}<br>
                 SNPs Found: ${data.count}<br>
                 Skipped SNPs: ${data.skipped_count}<br>
                 Pages Scraped: ${data.pages_scraped}<br>
@@ -513,6 +521,7 @@
             debugInfo.style.display = 'block';
             
             document.getElementById('resultSection').style.display = 'block';
+            console.log('Result section displayed'); // Debug logging
             hideProgress();
         }
         
@@ -589,10 +598,18 @@
                     } else if (status.no_results) {
                         // Handle no results case
                         showNoResults(status.message);
-                    } else if (status.filename) {
+                    } else if (status.filename && status.count > 0) {
                         showResult({
                             count: status.count || 0,
                             filename: status.filename,
+                            skipped_count: status.skipped_count || 0,
+                            pages_scraped: status.pages_scraped || 0
+                        });
+                    } else if (status.count > 0) {
+                        // Show result even if filename is not set yet
+                        showResult({
+                            count: status.count || 0,
+                            filename: status.filename || '',
                             skipped_count: status.skipped_count || 0,
                             pages_scraped: status.pages_scraped || 0
                         });
