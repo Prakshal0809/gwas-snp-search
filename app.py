@@ -69,11 +69,18 @@ def run_scraping_task(search_term):
                     'no_results': True
                 })
             else:
+                # Debug logging
+                print(f"Scraping completed successfully:")
+                print(f"  Count: {result['count']}")
+                print(f"  Filename: {result.get('filename', 'NOT SET')}")
+                print(f"  Skipped: {result['skipped_count']}")
+                print(f"  Pages: {result['pages_scraped']}")
+                
                 scraping_status.update({
                     'is_running': False,
                     'progress': 100,
                     'message': f'Completed! Found {result["count"]} SNPs',
-                    'filename': result['filename'],
+                    'filename': result.get('filename', ''),
                     'count': result['count'],
                     'skipped_count': result['skipped_count'],
                     'pages_scraped': result['pages_scraped'],

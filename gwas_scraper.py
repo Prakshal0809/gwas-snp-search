@@ -482,6 +482,13 @@ def run_gwas_scrape(search_term, progress_callback=None, max_pages=None):
         if progress_callback:
             progress_callback(100, f"Completed! Found {len(snp_data)} SNPs across {page} pages.")
         
+        # Debug logging
+        print(f"GWAS scraper completed:")
+        print(f"  SNPs found: {len(snp_data)}")
+        print(f"  Filename: {filename}")
+        print(f"  Filepath: {filepath}")
+        print(f"  File exists: {os.path.exists(filepath)}")
+        
         return {
             'success': True,
             'count': len(snp_data),

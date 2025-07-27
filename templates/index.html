@@ -584,6 +584,7 @@
                 const response = await fetch('/api/status');
                 const status = await response.json();
                 
+                console.log('Status update:', status); // Debug logging
                 updateProgress(status.progress, status.message);
                 
                 if (!status.is_running) {
@@ -598,15 +599,8 @@
                     } else if (status.no_results) {
                         // Handle no results case
                         showNoResults(status.message);
-                    } else if (status.filename && status.count > 0) {
-                        showResult({
-                            count: status.count || 0,
-                            filename: status.filename,
-                            skipped_count: status.skipped_count || 0,
-                            pages_scraped: status.pages_scraped || 0
-                        });
                     } else if (status.count > 0) {
-                        // Show result even if filename is not set yet
+                        // Show detailed results whenever we have SNPs found
                         showResult({
                             count: status.count || 0,
                             filename: status.filename || '',
