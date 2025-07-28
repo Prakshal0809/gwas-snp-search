@@ -493,7 +493,7 @@
         }
         
         function showResult(data) {
-            console.log('Result data:', data); // Debug logging
+            console.log('showResult called with data:', data); // Debug logging
             
             document.getElementById('snpCount').textContent = data.count || 0;
             document.getElementById('skippedCount').textContent = data.skipped_count || 0;
@@ -587,19 +587,43 @@
                 console.log('Status update:', status); // Debug logging
                 updateProgress(status.progress, status.message);
                 
+                // Additional debugging for result handling
+                if (!status.is_running && status.count > 0) {
+                    console.log('Search completed with results:');
+                    console.log('  Count:', status.count);
+                    console.log('  Filename:', status.filename);
+                    console.log('  Skipped:', status.skipped_count);
+                    console.log('  Pages:', status.pages_scraped);
+                }
+                
+                // Debug the actual status values
                 if (!status.is_running) {
+                    console.log('Final status check:');
+                    console.log('  is_running:', status.is_running);
+                    console.log('  count:', status.count, 'type:', typeof status.count);
+                    console.log('  count > 0:', status.count > 0);
+                    console.log('  filename:', status.filename);
+                    console.log('  error:', status.error);
+                    console.log('  no_results:', status.no_results);
+                }
+                
+                if (!status.is_running) {
+                    console.log('Search completed, processing results...');
                     clearInterval(statusInterval);
                     
                     if (status.error) {
+                        console.log('Error detected:', status.error);
                         if (status.error.includes('timed out')) {
                             showTimeout(status.error);
                         } else {
                             showError(status.error);
                         }
                     } else if (status.no_results) {
+                        console.log('No results detected');
                         // Handle no results case
                         showNoResults(status.message);
                     } else if (status.count > 0) {
+                        console.log('Results detected, calling showResult...');
                         // Show detailed results whenever we have SNPs found
                         showResult({
                             count: status.count || 0,
@@ -607,6 +631,8 @@
                             skipped_count: status.skipped_count || 0,
                             pages_scraped: status.pages_scraped || 0
                         });
+                    } else {
+                        console.log('No condition met - status:', status);
                     }
                     
                     resetSearchButton();

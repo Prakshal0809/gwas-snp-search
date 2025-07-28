@@ -1,0 +1,9 @@
+Primary SNP,Risk Allele,Non-risk Allele,P-value,Beta,Trait,EBI Study Link,PubMed Link,DOI
+rs1815191-A,A,T,2 x 10-10,0.42 unit increase,Facial wrinkling,https://www.ebi.ac.uk/gwas/studies/GCST012109,https://pubmed.ncbi.nlm.nih.gov/33959940,https://doi.org/10.1111/bjd.20436
+rs147991442-A,A,T,6 x 10-10,0.2 unit increase,Facial wrinkling,https://www.ebi.ac.uk/gwas/studies/GCST012109,https://pubmed.ncbi.nlm.nih.gov/33959940,https://doi.org/10.1111/bjd.20436
+rs1803710-C,C,G,3 x 10-8,0.14 unit increase,Facial wrinkling,https://www.ebi.ac.uk/gwas/studies/GCST012108,https://pubmed.ncbi.nlm.nih.gov/33959940,https://doi.org/10.1111/bjd.20436
+rs932539-T,T,A,4 x 10-8,0.1 unit increase,Facial wrinkling,https://www.ebi.ac.uk/gwas/studies/GCST012107,https://pubmed.ncbi.nlm.nih.gov/33959940,https://doi.org/10.1111/bjd.20436
+rs6679498-C,C,G,2 x 10-8,0.11 unit decrease,nevus count,https://www.ebi.ac.uk/gwas/studies/GCST012106,https://pubmed.ncbi.nlm.nih.gov/33959940,https://doi.org/10.1111/bjd.20436
+rs34466007-G,G,C,9 x 10-11,0.13 unit decrease,nevus count,https://www.ebi.ac.uk/gwas/studies/GCST012106,https://pubmed.ncbi.nlm.nih.gov/33959940,https://doi.org/10.1111/bjd.20436
+rs2504460-G,G,C,1 x 10-8,0.13 unit increase,Facial wrinkling,https://www.ebi.ac.uk/gwas/studies/GCST012105,https://pubmed.ncbi.nlm.nih.gov/33959940,https://doi.org/10.1111/bjd.20436
+rs173662-C,C,G,3 x 10-9,0.11 unit increase,Facial wrinkling,https://www.ebi.ac.uk/gwas/studies/GCST012105,https://pubmed.ncbi.nlm.nih.gov/33959940,https://doi.org/10.1111/bjd.20436

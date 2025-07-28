@@ -30,7 +30,8 @@ def run_scraping_task(search_term):
         'error': None,
         'count': 0,
         'skipped_count': 0,
-        'pages_scraped': 0
+        'pages_scraped': 0,
+        'no_results': False
     })
     
     def progress_callback(progress, message):
@@ -84,7 +85,8 @@ def run_scraping_task(search_term):
                     'count': result['count'],
                     'skipped_count': result['skipped_count'],
                     'pages_scraped': result['pages_scraped'],
-                    'error': None
+                    'error': None,
+                    'no_results': False
                 })
         else:
             scraping_status.update({

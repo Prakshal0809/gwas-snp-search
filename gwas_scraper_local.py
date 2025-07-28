@@ -119,12 +119,22 @@ def run_gwas_scrape(search_term, progress_callback=None, max_pages=None):
         if progress_callback:
             progress_callback(20, f"Searching for '{search_term}'...")
         
-        # Use original working search method
-        search_box = wait.until(EC.presence_of_element_located((By.ID, "search-box")))
-        search_box.clear()
-        search_box.send_keys(search_term)
-        search_box.send_keys(Keys.RETURN)
-        time.sleep(2)  # Wait for search to complete
+        # Use original working search method with retry
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                search_box = wait.until(EC.presence_of_element_located((By.ID, "search-box")))
+                search_box.clear()
+                search_box.send_keys(search_term)
+                search_box.send_keys(Keys.RETURN)
+                time.sleep(2)  # Wait for search to complete
+                print(f"Search attempt {attempt + 1} successful")
+                break
+            except Exception as e:
+                print(f"Search attempt {attempt + 1} failed: {str(e)}")
+                if attempt == max_retries - 1:
+                    raise Exception(f"Failed to perform search after {max_retries} attempts")
+                time.sleep(1)  # Wait before retry
         
         if progress_callback:
             progress_callback(25, "Checking search results...")
@@ -196,6 +206,7 @@ def run_gwas_scrape(search_term, progress_callback=None, max_pages=None):
         
         except Exception as e:
             # If we can't check for no results, continue with normal flow
+            print(f"Warning: Could not check for no results: {str(e)}")
             pass
         
         # Wait for results and try to find clickable links
@@ -227,7 +238,8 @@ def run_gwas_scrape(search_term, progress_callback=None, max_pages=None):
                                 break
                     if link_found:
                         break
-                except:
+                except Exception as e:
+                    print(f"Warning: Failed to process selector {selector}: {str(e)}")
                     continue
             
             # If no specific match found, try clicking the first available link
@@ -238,7 +250,8 @@ def run_gwas_scrape(search_term, progress_callback=None, max_pages=None):
                         if safe_click(driver, first_result):
                             link_found = True
                             break
-                    except:
+                    except Exception as e:
+                        print(f"Warning: Failed to click first result with selector {selector}: {str(e)}")
                         continue
             
             if not link_found:
@@ -408,7 +421,8 @@ def run_gwas_scrape(search_term, progress_callback=None, max_pages=None):
                         if progress_callback:
                             progress_callback(progress, f"Found Next button with selector: {selector}")
                         break
-                    except:
+                    except Exception as e:
+                        print(f"Warning: Failed to find Next button with selector {selector}: {str(e)}")
                         continue
                 
                 if not next_btn:
@@ -452,6 +466,10 @@ def run_gwas_scrape(search_term, progress_callback=None, max_pages=None):
         if progress_callback:
             progress_callback(90, "Saving results...")
         
+        # Validate that we have data to save
+        if not snp_data:
+            print("Warning: No SNP data collected, but continuing with file creation")
+        
         # Save results
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"{search_term.replace(' ', '_')}_snps_{timestamp}.csv"
@@ -462,12 +480,17 @@ def run_gwas_scrape(search_term, progress_callback=None, max_pages=None):
         filepath = os.path.join(downloads_dir, filename)
         
         # Write CSV file
-        with open(filepath, 'w', newline='', encoding='utf-8') as csvfile:
-            fieldnames = ["Primary SNP", "Risk Allele", "Non-risk Allele", "P-value", "Beta", "Trait", "EBI Study Link", "PubMed Link", "DOI"]
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            writer.writeheader()
-            for row in snp_data:
-                writer.writerow(row)
+        try:
+            with open(filepath, 'w', newline='', encoding='utf-8') as csvfile:
+                fieldnames = ["Primary SNP", "Risk Allele", "Non-risk Allele", "P-value", "Beta", "Trait", "EBI Study Link", "PubMed Link", "DOI"]
+                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                writer.writeheader()
+                for row in snp_data:
+                    writer.writerow(row)
+            print(f"Successfully created file: {filepath}")
+        except Exception as e:
+            print(f"Error creating file: {str(e)}")
+            filename = ""  # Clear filename if file creation failed
         
         # Save skipped studies if any
         if skipped_studies:
@@ -481,6 +504,13 @@ def run_gwas_scrape(search_term, progress_callback=None, max_pages=None):
         
         if progress_callback:
             progress_callback(100, f"Completed! Found {len(snp_data)} SNPs across {page} pages.")
+        
+        # Debug logging
+        print(f"GWAS scraper completed:")
+        print(f"  SNPs found: {len(snp_data)}")
+        print(f"  Filename: {filename}")
+        print(f"  Filepath: {filepath}")
+        print(f"  File exists: {os.path.exists(filepath)}")
         
         return {
             'success': True,
